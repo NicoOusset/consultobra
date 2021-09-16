@@ -55,6 +55,7 @@ def leerExcel(nombreExcel):
         Oficial = row[11]
         Medio_oficial = row[12]
         Ayudante = row[13]
+        ItemActivo = row[14]
 
         if Oficial_especializado == "":
             Oficial_especializado=0
@@ -78,7 +79,7 @@ def leerExcel(nombreExcel):
             rubrosCargados.append(idRubro)
             cargarRubroDesdeExcel(idRubro, NombreRubro, 'Si')
 
-        cargarItemDesdeExcel(IdItem,NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,idRubro)
+        cargarItemDesdeExcel(IdItem,NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,idRubro, ItemActivo)
     
     print("Carga de datos finalizada")
 
@@ -113,7 +114,7 @@ def cargarRubroDesdeExcel(id, nombre, activo):
     return 'Rubro registrado correctamente'
 
 
-def cargarItemDesdeExcel(IdItem,NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,RubroId):
+def cargarItemDesdeExcel(IdItem,NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,RubroId,ItemActivo):
 
     try:
         cursor=db.cursor()
@@ -124,14 +125,14 @@ def cargarItemDesdeExcel(IdItem,NombreItem,Unidad,Materiales,Obreros,Herramental
         item=cursor.fetchone()
 
         if not item:
-            sql1 = (" INSERT INTO items (Id,Nombre,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,RubroId) " + 
-                    " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ")
-            tupla1=(IdItem, NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,RubroId)
+            sql1 = (" INSERT INTO items (Id,Nombre,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,RubroId,Activo) " + 
+                    " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s")
+            tupla1=(IdItem, NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,RubroId,ItemActivo)
             cursor.execute(sql1,tupla1)
         else:
-            sql1 = (" UPDATE items SET Nombre=%s, Unidad=%s, Materiales=%s, Obreros=%s, Herramental=%s, Cargas_sociales=%s, Comentario=%s, Oficial_especializado=%s, Oficial=%s, Medio_oficial=%s, Ayudante=%s, RubroId=%s " + 
+            sql1 = (" UPDATE items SET Nombre=%s, Unidad=%s, Materiales=%s, Obreros=%s, Herramental=%s, Cargas_sociales=%s, Comentario=%s, Oficial_especializado=%s, Oficial=%s, Medio_oficial=%s, Ayudante=%s, RubroId=%s , Activo=%s " + 
                     " WHERE Id = %s ")
-            tupla1=(NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,RubroId,  IdItem)
+            tupla1=(NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,RubroId,ItemActivo,  IdItem)
             cursor.execute(sql1,tupla1)
 
         db.commit()
@@ -374,7 +375,7 @@ def calcularPrecio():
     return jsonify({'result':'success', "datos_item":datos_items, 'costo_directo_total':costo_directo_total, 'costo_de_obra':costo_de_obra, 'costo_final':costo_final, 'porcentajes':porcentajes, 'precio_metro_cuadrado':precio_metro_cuadrado})
 
 
-# ----------------   CREAR RUBRO DESDE JSON -------------------
+# ----------------   CREAR RUBRO DESDE JSON - TEST -------------------
 @app.route('/crearRubro', methods=['POST'])
 def crearRubro():
 
