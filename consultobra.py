@@ -33,7 +33,7 @@ def guardarExcel():
 
 def leerExcel(nombreExcel):
     rubrosCargados = []
-    df1 = pd.read_excel(nombreExcel, sheet_name="Hoja1")
+    df1 = pd.read_excel(nombreExcel, sheet_name="Tabla")
     df = df1.replace(np.nan, '', regex=True)
 
     for index, row in df.iterrows():
@@ -56,6 +56,15 @@ def leerExcel(nombreExcel):
         Medio_oficial = row[12]
         Ayudante = row[13]
         ItemActivo = row[14]
+
+        if Materiales == "":
+            Materiales=0
+        if Obreros == "":
+            Obreros=0
+        if Herramental == "":
+            Herramental=0
+        if Cargas_sociales == "":
+            Cargas_sociales=0        
 
         if Oficial_especializado == "":
             Oficial_especializado=0
@@ -117,6 +126,7 @@ def cargarRubroDesdeExcel(id, nombre, activo):
 def cargarItemDesdeExcel(IdItem,NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,RubroId,ItemActivo):
 
     try:
+        print(IdItem)
         cursor=db.cursor()
         sql = (" SELECT * FROM items " + 
                " WHERE Id = %s ")
@@ -124,16 +134,21 @@ def cargarItemDesdeExcel(IdItem,NombreItem,Unidad,Materiales,Obreros,Herramental
         cursor.execute(sql,tupla)
         item=cursor.fetchone()
 
+        print("aqui1")
+
         if not item:
-            sql1 = (" INSERT INTO items (Id,Nombre,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,RubroId,Activo) " + 
-                    " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s")
+            print("aqui2")
+            sql1 = ("INSERT INTO items (Id,Nombre,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,RubroId,Activo) " + 
+                    "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ")
             tupla1=(IdItem, NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,RubroId,ItemActivo)
             cursor.execute(sql1,tupla1)
+            
         else:
             sql1 = (" UPDATE items SET Nombre=%s, Unidad=%s, Materiales=%s, Obreros=%s, Herramental=%s, Cargas_sociales=%s, Comentario=%s, Oficial_especializado=%s, Oficial=%s, Medio_oficial=%s, Ayudante=%s, RubroId=%s , Activo=%s " + 
                     " WHERE Id = %s ")
             tupla1=(NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,RubroId,ItemActivo,  IdItem)
             cursor.execute(sql1,tupla1)
+            print("aqui3")
 
         db.commit()
         cursor.close()
