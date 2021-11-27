@@ -1,5 +1,6 @@
 import os
 from flask import Flask, request, jsonify
+
 from datetime import datetime
 import pymysql
 import pandas as pd
@@ -10,6 +11,7 @@ db = pymysql.connect(host='localhost',
                     user='root',
                     password='',
                     db='consultobra')
+
 
 @app.route('/guardarExcel', methods=['POST'])
 def guardarExcel():
@@ -86,7 +88,7 @@ def leerExcel(nombreExcel):
 
         if(flag):
             rubrosCargados.append(idRubro)
-            cargarRubroDesdeExcel(idRubro, NombreRubro, 'Si')
+            cargarRubroDesdeExcel(idRubro, NombreRubro, 'SI')
 
         cargarItemDesdeExcel(IdItem,NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,idRubro, ItemActivo)
     
@@ -166,7 +168,7 @@ def buscarRubros():
     try:
         cursor=db.cursor()                
         sql = (" SELECT r.Id, r.Nombre FROM rubros r " + 
-               " WHERE r.Activo = 'Si' ")       
+               " WHERE r.Activo = 'SI' ORDER BY r.Id ")       
         cursor.execute(sql)
         rubrosBusqueda = cursor.fetchall()
         cursor.close()
@@ -186,42 +188,6 @@ def buscarRubros():
     return jsonify({'result':'success', 'rubros':rubros, 'cantidad de rubros': cantidadRubros})
 
 
-@app.route('/buscarItems', methods=['POST'])
-def buscarItems():
-    
-    try:
-        cursor=db.cursor()
-        sql0 = "SHOW COLUMNS FROM items FROM consultobra;"
-        cursor.execute(sql0)
-        columnas = cursor.fetchall()        
-        columnasItem = []
-        for c in columnas:
-            nombreColumna = c[0]
-            columnasItem.append(nombreColumna)        
-        columnasItem.append("Nombre_Rubro")
-        
-        sql = (" SELECT i.*, r.Nombre FROM items i INNER JOIN rubros r " + 
-               " ON i.RubroId = r.Id")       
-        cursor.execute(sql)
-        itemsBusqueda = cursor.fetchall()
-        cursor.close()
-
-        cantidadItems=0
-        items=[]
-        for i in itemsBusqueda:
-            elemento = {}
-            for index in range(len(columnasItem)):
-                elemento[columnasItem[index]] = i[index]
-            items.append(elemento)      
-            cantidadItems=cantidadItems+1
-        
-    except Exception as e:        
-        return jsonify({'result':'Error al buscar items: '+str(e)})
-
-    #return jsonify({'result':'success', 'items':itemsBusqueda, 'cantidad de items': cantidadItems})
-    return jsonify({'result':'success', 'items':items, 'cantidad de items': cantidadItems})
-
-
 @app.route('/buscarItemsPorRubro', methods=['POST'])
 def buscarItemsPorRubro():
     idRubro=request.json['idRubro']
@@ -236,8 +202,8 @@ def buscarItemsPorRubro():
             nombreColumna = c[0]
             columnasItem.append(nombreColumna)
 
-        sql = (" SELECT * FROM items  " + 
-               " WHERE RubroId=%s ")
+        sql = (" SELECT * FROM items i " + 
+               " WHERE RubroId=%s and (i.Activo='SI' or i.Activo='Si') ORDER BY i.Id ")
         tupla=(idRubro)
         cursor.execute(sql,tupla)
         itemsBusqueda = cursor.fetchall()
@@ -258,6 +224,117 @@ def buscarItemsPorRubro():
     #return jsonify({'result':'success', 'items':itemsBusqueda, 'cantidad de items': cantidadItems})
     return jsonify({'result':'success', 'items':items, 'cantidad de items': cantidadItems})
 
+
+@app.route('/buscarItemsPorRubroConInactivos', methods=['POST'])
+def buscarItemsPorRubroConInactivos():
+    idRubro=request.json['idRubro']
+
+    try:
+        cursor=db.cursor()
+        sql0 = "SHOW COLUMNS FROM items FROM consultobra;"
+        cursor.execute(sql0)
+        columnas = cursor.fetchall()        
+        columnasItem = []
+        for c in columnas:
+            nombreColumna = c[0]
+            columnasItem.append(nombreColumna)
+
+        sql = (" SELECT * FROM items i " + 
+               " WHERE RubroId=%s ORDER BY i.Id ")
+        tupla=(idRubro)
+        cursor.execute(sql,tupla)
+        itemsBusqueda = cursor.fetchall()
+        cursor.close()
+
+        cantidadItems=0
+        items=[]
+        for i in itemsBusqueda:
+            elemento = {}
+            for index in range(len(columnasItem)):
+                elemento[columnasItem[index]] = i[index]
+            items.append(elemento)      
+            cantidadItems=cantidadItems+1
+        
+    except Exception as e:        
+        return jsonify({'result':'Error al buscar items: '+str(e)})
+
+    #return jsonify({'result':'success', 'items':itemsBusqueda, 'cantidad de items': cantidadItems})
+    return jsonify({'result':'success', 'items':items, 'cantidad de items': cantidadItems})
+
+
+
+
+@app.route('/buscarItems', methods=['POST'])
+def buscarItems():
+    
+    try:
+        cursor=db.cursor()
+        sql0 = "SHOW COLUMNS FROM items FROM consultobra;"
+        cursor.execute(sql0)
+        columnas = cursor.fetchall()        
+        columnasItem = []
+        for c in columnas:
+            nombreColumna = c[0]
+            columnasItem.append(nombreColumna)        
+        columnasItem.append("Nombre_Rubro")
+        
+        sql = (" SELECT i.*, r.Nombre FROM items i  " + 
+               " INNER JOIN rubros r ON i.RubroId = r.Id "+
+               " WHERE i.Activo='SI' or i.Activo='Si' ORDER BY i.Id ")       
+        cursor.execute(sql)
+        itemsBusqueda = cursor.fetchall()
+        cursor.close()
+
+        cantidadItems=0
+        items=[]
+        for i in itemsBusqueda:
+            elemento = {}
+            for index in range(len(columnasItem)):
+                elemento[columnasItem[index]] = i[index]
+            items.append(elemento)      
+            cantidadItems=cantidadItems+1
+        
+    except Exception as e:        
+        return jsonify({'result':'Error al buscar items: '+str(e)})
+
+    #return jsonify({'result':'success', 'items':itemsBusqueda, 'cantidad de items': cantidadItems})
+    return jsonify({'result':'success', 'items':items, 'cantidad de items': cantidadItems})
+
+
+@app.route('/buscarItemsConInactivos', methods=['POST'])
+def buscarItemsConInactivos():
+    
+    try:
+        cursor=db.cursor()
+        sql0 = "SHOW COLUMNS FROM items FROM consultobra;"
+        cursor.execute(sql0)
+        columnas = cursor.fetchall()        
+        columnasItem = []
+        for c in columnas:
+            nombreColumna = c[0]
+            columnasItem.append(nombreColumna)        
+        columnasItem.append("Nombre_Rubro")
+        
+        sql = (" SELECT i.*, r.Nombre FROM items i  " + 
+               " INNER JOIN rubros r ON i.RubroId = r.Id "+
+               " ORDER BY i.Id ")       
+        cursor.execute(sql)
+        itemsBusqueda = cursor.fetchall()
+        cursor.close()
+
+        cantidadItems=0
+        items=[]
+        for i in itemsBusqueda:
+            elemento = {}
+            for index in range(len(columnasItem)):
+                elemento[columnasItem[index]] = i[index]
+            items.append(elemento)      
+            cantidadItems=cantidadItems+1
+        
+    except Exception as e:        
+        return jsonify({'result':'Error al buscar items: '+str(e)})
+
+    return jsonify({'result':'success', 'items':items, 'cantidad de items': cantidadItems})
 
 
 # ----------------------  CALCULOS DE PRECIOS -------------------------------
@@ -412,7 +489,285 @@ def crearRubro():
 
     return jsonify({'result':'Rubro registrado correctamente'})
        
+
+
+
+#------------------------ A QUIEN LLAMO? -------------------------------------------
+
+
+@app.route('/crearAquienLlamo', methods=['POST'])
+def crearAquienLlamo():
     
+    try:
+        Categoria=request.json['Categoria']
+        Nombre=request.json['Nombre']
+        Apellido=request.json['Apellido']
+        Telefono=request.json['Telefono']
+        Direccion=request.json['Direccion']
+        Facebook=request.json['Facebook']
+        Instagram=request.json['Instagram']        
+    
+        cursor=db.cursor()
+        sql = (" INSERT INTO a_quien_llamo " + 
+               " VALUES (default,%s,%s,%s,%s,%s,%s,%s,'Si') ")
+        tupla=(Categoria, Nombre, Apellido, Telefono, Direccion, Facebook, Instagram)
+        cursor.execute(sql,tupla)
+        db.commit()
+        cursor.close()       
+        
+    except Exception as e:        
+        return jsonify({'result':'Error', 'mensaje': 'Error al crear A quien Llamo?: '+str(e)})
+    
+    return jsonify({'result':'Success', 'mensaje':"A quien Llamo? creado correctamente"})
+
+
+@app.route('/listarAquienLlamo', methods=['GET'])
+def listarAquienLlamo():
+    
+    try:
+        cursor=db.cursor()
+        sql0 = "SHOW COLUMNS FROM a_quien_llamo FROM consultobra;"
+        cursor.execute(sql0)
+        columnas = cursor.fetchall()        
+        columnasItem = []
+        for c in columnas:
+            nombreColumna = c[0]
+            columnasItem.append(nombreColumna)
+        columnasItem.append("Nombre_categoria")
+
+
+        sql = (" SELECT a.*, NombreCategoria FROM a_quien_llamo a "+
+                " INNER JOIN categorias c ON a.Categoria = c.Id "+
+                " WHERE Activo='Si' ")
+        cursor.execute(sql)
+        AquienLlamoBusqueda = cursor.fetchall()
+        cursor.close()
+
+        if not AquienLlamoBusqueda:
+            return jsonify({'result':'Error' , 'mensaje': 'No se encontraron A_quien_llamo'})
+
+        cantidadAquienLlamo=0
+        AquienLlamo=[]
+        for i in AquienLlamoBusqueda:
+            elemento = {}
+            for index in range(len(columnasItem)):
+                elemento[columnasItem[index]] = i[index]
+            AquienLlamo.append(elemento)      
+            cantidadAquienLlamo=cantidadAquienLlamo+1     
+        
+    except Exception as e:        
+        return jsonify({'result':'Error', 'mensaje': 'Error al buscar A_quien_llamo: '+str(e)})
+    return jsonify({'result':'Success', 'A_quien_llamo':AquienLlamo, 'Cantidad_A_quien_llamo':cantidadAquienLlamo})
+
+
+@app.route('/buscarAquienLlamo', methods=['GET'])
+def buscarAquienLlamo():
+
+    try:  
+        Id = "%" + request.json['Id'] + "%"
+        Categoria = "%" + request.json['Categoria'] + "%"
+        Nombre = "%" + request.json['Nombre'] + "%"
+        Apellido = "%" + request.json['Apellido'] + "%"
+        Telefono = "%" + request.json['Telefono'] + "%"
+        Direccion = "%" + request.json['Direccion'] + "%"
+        Facebook = "%" + request.json['Facebook'] + "%"
+        Instagram = "%" + request.json['Instagram'] + "%"
+    
+        cursor=db.cursor()
+        sql0 = "SHOW COLUMNS FROM a_quien_llamo FROM consultobra;"
+        cursor.execute(sql0)
+        columnas = cursor.fetchall()        
+        columnasItem = []
+        for c in columnas:
+            nombreColumna = c[0]
+            columnasItem.append(nombreColumna)
+        columnasItem.append("Nombre_categoria")
+
+        sql = (" SELECT a.*, NombreCategoria FROM a_quien_llamo a "+
+               " INNER JOIN categorias c ON a.Categoria = c.Id "+
+               " WHERE a.Id like %s and Categoria like %s and Nombre like %s and Apellido like %s and "+
+               " Direccion like %s and Telefono like %s and Facebook like %s and " +
+               " Instagram like %s and Activo='Si' " ) 
+        tupla=(Id, Categoria, Nombre, Apellido, Direccion, Telefono, Facebook, Instagram)     
+        cursor.execute(sql,tupla)
+        AquienLlamoBusqueda = cursor.fetchall()
+        cursor.close()
+
+        if not AquienLlamoBusqueda:
+            return jsonify({'result':'Error' , 'mensaje': 'No se encontraron A_quien_llamo'})
+
+        cantidadAquienLlamo=0
+        AquienLlamo=[]
+        for i in AquienLlamoBusqueda:
+            elemento = {}
+            for index in range(len(columnasItem)):
+                elemento[columnasItem[index]] = i[index]
+            AquienLlamo.append(elemento)      
+            cantidadAquienLlamo=cantidadAquienLlamo+1     
+        
+    except Exception as e:        
+        return jsonify({'result':'Error', 'mensaje': 'Error al buscar A_quien_llamo: '+str(e)})
+    return jsonify({'result':'Success', 'A_quien_llamo':AquienLlamo, 'Cantidad_A_quien_llamo':cantidadAquienLlamo})
+
+
+@app.route('/buscarDatosAquienLlamo', methods=['GET'])
+def buscarDatosAquienLlamo():
+    
+    try:
+        Id=request.json['Id']
+
+        cursor=db.cursor()
+        sql0 = "SHOW COLUMNS FROM a_quien_llamo FROM consultobra;"
+        cursor.execute(sql0)
+        columnas = cursor.fetchall()        
+        columnasItem = []
+        for c in columnas:
+            nombreColumna = c[0]
+            columnasItem.append(nombreColumna)
+
+        sql = (" SELECT * FROM a_quien_llamo WHERE Id=%s ")       
+        cursor.execute(sql, Id)
+        ListaAquienLlamo = cursor.fetchone()
+        cursor.close()
+
+        if not ListaAquienLlamo:
+            return jsonify({'result':'Error' , 'mensaje': 'No se encontró el A_quien_llamo'})
+       
+        AquienLlamo={}
+        for index in range(len(columnasItem)):
+            AquienLlamo[columnasItem[index]] = ListaAquienLlamo[index]   
+                     
+    except Exception as e:        
+        return jsonify({'result':'Error' , 'mensaje': 'Error al buscar el A_quien_llamo: '+str(e)})
+    return jsonify({'result':'Success', 'Datos_A_quien_llamo':AquienLlamo})
+
+
+
+@app.route('/modificarAquienLlamo', methods=['POST'])
+def modificarAquienLlamo():
+
+    try:
+        Id=request.json['Id']
+        Categoria=request.json['Categoria']
+        Nombre=request.json['Nombre']
+        Apellido=request.json['Apellido']
+        Telefono=request.json['Telefono']
+        Direccion=request.json['Direccion']
+        Facebook=request.json['Facebook']
+        Instagram=request.json['Instagram']  
+     
+        cursor=db.cursor()
+        sql = (" UPDATE a_quien_llamo " + 
+               " SET Categoria=%s, Nombre=%s, Apellido=%s, Telefono=%s, Direccion=%s, Facebook=%s, Instagram=%s "+
+               " WHERE Id=%s " )
+        tupla=(Categoria, Nombre, Apellido,  Telefono, Direccion, Facebook, Instagram, Id)
+        cursor.execute(sql,tupla)
+        db.commit()
+        cursor.close()       
+        
+    except Exception as e:        
+        return jsonify({'result':'Error' , 'mensaje':'Error al modificar el A_quien_llamo: '+str(e)})
+    
+    return jsonify({'result':'Success', 'mensaje':"A_quien_llamo modificado correctamente"})
+
+
+@app.route('/eliminarAquienLlamo', methods=['POST'])
+def eliminarAquienLlamo():
+
+    try:
+        Id=request.json['Id']
+    
+        cursor=db.cursor()
+        sql = (" UPDATE a_quien_llamo SET Activo='No' " + 
+               " WHERE Id=%s " )
+        tupla=(Id)
+        cursor.execute(sql,tupla)
+        db.commit()
+        cursor.close()       
+        
+    except Exception as e:        
+        return jsonify({'result':'Error' , 'mensaje':'Error al eliminar el A_quien_llamo: '+str(e)})
+    
+    return jsonify({'result':'Success', 'mensaje':"A_quien_llamo eliminado correctamente"})
+    
+
+
+@app.route('/crearCategoria', methods=['POST'])
+def crearCategoria():
+    
+    try:        
+        NombreCategoria=request.json['NombreCategoria']              
+    
+        cursor=db.cursor()
+        sql = (" INSERT INTO categorias " + 
+               " VALUES (default,%s) ")
+        tupla=(NombreCategoria)
+        cursor.execute(sql,tupla)
+        db.commit()
+        cursor.close()       
+        
+    except Exception as e:        
+        return jsonify({'result':'Error', 'mensaje': 'Error al crear Categoria: '+str(e)})
+    
+    return jsonify({'result':'Success', 'mensaje':"Categoria creada correctamente"})
+    
+
+@app.route('/listarCategorias', methods=['GET'])
+def listarCategorias():
+    
+    try:
+        cursor=db.cursor()
+        sql0 = "SHOW COLUMNS FROM categorias FROM consultobra;"
+        cursor.execute(sql0)
+        columnas = cursor.fetchall()        
+        columnasItem = []
+        for c in columnas:
+            nombreColumna = c[0]
+            columnasItem.append(nombreColumna)
+        
+        sql = (" SELECT * FROM categorias ")
+        cursor.execute(sql)
+        CategoriasBusqueda = cursor.fetchall()
+        cursor.close()
+
+        if not CategoriasBusqueda:
+            return jsonify({'result':'Error' , 'mensaje': 'No se encontraron Categorias'})
+
+        Categorias=[]
+        for i in CategoriasBusqueda:
+            elemento = {}
+            for index in range(len(columnasItem)):
+                elemento[columnasItem[index]] = i[index]
+            Categorias.append(elemento)      
+        
+    except Exception as e:        
+        return jsonify({'result':'Error', 'mensaje': 'Error al buscar Categorias: '+str(e)})
+    return jsonify({'result':'Success', 'Categorias':Categorias})
+
+
+
+@app.route('/modificarCategoria', methods=['POST'])
+def modificarCategoria():
+
+    try:
+        Id=request.json['Id']
+        NombreCategoria=request.json['NombreCategoria']        
+     
+        cursor=db.cursor()
+        sql = (" UPDATE categorias " + 
+               " SET NombreCategoria=%s "+
+               " WHERE Id=%s " )
+        tupla=(NombreCategoria, Id)
+        cursor.execute(sql,tupla)
+        db.commit()
+        cursor.close()       
+        
+    except Exception as e:        
+        return jsonify({'result':'Error' , 'mensaje':'Error al modificar la Categoria: '+str(e)})
+    
+    return jsonify({'result':'Success', 'mensaje':"Categoria modificada correctamente"})
+
+
 if __name__ == "__main__":
     app.run(debug=True,
             port=4000)
