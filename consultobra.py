@@ -1,16 +1,36 @@
 import os
 from flask import Flask, request, jsonify
-
 from datetime import datetime
-import pymysql
+import conexionBD
 import pandas as pd
 import numpy as np
+
  
 app = Flask(__name__)
-db = pymysql.connect(host='localhost',
-                    user='root',
-                    password='',
-                    db='consultobra')
+
+
+global HOST
+HOST = 'us-cdbr-east-04.cleardb.com'
+global DB
+DB = 'heroku_04e936a4aba4f0a'
+global USER
+USER = 'b78ad30286a20d'
+global PASS
+PASS = '2a85203a'
+
+
+'''
+global HOST
+HOST = 'localhost'
+global DB
+DB = 'consultobra'
+global USER
+USER = 'root'
+global PASS
+PASS = ''
+'''
+
+
 
 
 @app.route('/guardarExcel', methods=['POST'])
@@ -98,6 +118,7 @@ def leerExcel(nombreExcel):
 def cargarRubroDesdeExcel(id, nombre, activo):
 
     try:
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
         cursor=db.cursor()
         sql = (" SELECT * FROM rubros " + 
                " WHERE Id = %s ")
@@ -118,6 +139,7 @@ def cargarRubroDesdeExcel(id, nombre, activo):
 
         db.commit()
         cursor.close()
+        conexionBD.desconectar(db)
         
     except Exception as e:        
         return str(e)
@@ -129,6 +151,7 @@ def cargarItemDesdeExcel(IdItem,NombreItem,Unidad,Materiales,Obreros,Herramental
 
     try:
         print(IdItem)
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
         cursor=db.cursor()
         sql = (" SELECT * FROM items " + 
                " WHERE Id = %s ")
@@ -154,6 +177,7 @@ def cargarItemDesdeExcel(IdItem,NombreItem,Unidad,Materiales,Obreros,Herramental
 
         db.commit()
         cursor.close()
+        conexionBD.desconectar(db)
         
     except Exception as e:   
         print(str(e))     
@@ -162,16 +186,18 @@ def cargarItemDesdeExcel(IdItem,NombreItem,Unidad,Materiales,Obreros,Herramental
     return 'Rubro registrado correctamente'
 
 
-@app.route('/buscarRubros', methods=['POST'])
+@app.route('/buscarRubros', methods=['GET'])
 def buscarRubros():
 
     try:
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
         cursor=db.cursor()                
         sql = (" SELECT r.Id, r.Nombre FROM rubros r " + 
                " WHERE r.Activo = 'SI' ORDER BY r.Id ")       
         cursor.execute(sql)
         rubrosBusqueda = cursor.fetchall()
         cursor.close()
+        conexionBD.desconectar(db)
 
         cantidadRubros=0
         rubros=[]
@@ -188,13 +214,14 @@ def buscarRubros():
     return jsonify({'result':'success', 'rubros':rubros, 'cantidad de rubros': cantidadRubros})
 
 
-@app.route('/buscarItemsPorRubro', methods=['POST'])
+@app.route('/buscarItemsPorRubro', methods=['GET'])
 def buscarItemsPorRubro():
     idRubro=request.json['idRubro']
 
     try:
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
         cursor=db.cursor()
-        sql0 = "SHOW COLUMNS FROM items FROM consultobra;"
+        sql0 = "SHOW COLUMNS FROM items FROM "+ DB + ";"
         cursor.execute(sql0)
         columnas = cursor.fetchall()        
         columnasItem = []
@@ -208,6 +235,7 @@ def buscarItemsPorRubro():
         cursor.execute(sql,tupla)
         itemsBusqueda = cursor.fetchall()
         cursor.close()
+        conexionBD.desconectar(db)
 
         cantidadItems=0
         items=[]
@@ -225,13 +253,14 @@ def buscarItemsPorRubro():
     return jsonify({'result':'success', 'items':items, 'cantidad de items': cantidadItems})
 
 
-@app.route('/buscarItemsPorRubroConInactivos', methods=['POST'])
+@app.route('/buscarItemsPorRubroConInactivos', methods=['GET'])
 def buscarItemsPorRubroConInactivos():
     idRubro=request.json['idRubro']
 
     try:
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
         cursor=db.cursor()
-        sql0 = "SHOW COLUMNS FROM items FROM consultobra;"
+        sql0 = "SHOW COLUMNS FROM items FROM "+ DB + ";"
         cursor.execute(sql0)
         columnas = cursor.fetchall()        
         columnasItem = []
@@ -245,6 +274,7 @@ def buscarItemsPorRubroConInactivos():
         cursor.execute(sql,tupla)
         itemsBusqueda = cursor.fetchall()
         cursor.close()
+        conexionBD.desconectar(db)
 
         cantidadItems=0
         items=[]
@@ -264,12 +294,13 @@ def buscarItemsPorRubroConInactivos():
 
 
 
-@app.route('/buscarItems', methods=['POST'])
+@app.route('/buscarItems', methods=['GET'])
 def buscarItems():
     
     try:
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
         cursor=db.cursor()
-        sql0 = "SHOW COLUMNS FROM items FROM consultobra;"
+        sql0 = "SHOW COLUMNS FROM items FROM "+ DB + ";"
         cursor.execute(sql0)
         columnas = cursor.fetchall()        
         columnasItem = []
@@ -284,6 +315,7 @@ def buscarItems():
         cursor.execute(sql)
         itemsBusqueda = cursor.fetchall()
         cursor.close()
+        conexionBD.desconectar(db)
 
         cantidadItems=0
         items=[]
@@ -301,12 +333,13 @@ def buscarItems():
     return jsonify({'result':'success', 'items':items, 'cantidad de items': cantidadItems})
 
 
-@app.route('/buscarItemsConInactivos', methods=['POST'])
+@app.route('/buscarItemsConInactivos', methods=['GET'])
 def buscarItemsConInactivos():
     
     try:
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
         cursor=db.cursor()
-        sql0 = "SHOW COLUMNS FROM items FROM consultobra;"
+        sql0 = "SHOW COLUMNS FROM items FROM "+ DB + ";"
         cursor.execute(sql0)
         columnas = cursor.fetchall()        
         columnasItem = []
@@ -321,6 +354,7 @@ def buscarItemsConInactivos():
         cursor.execute(sql)
         itemsBusqueda = cursor.fetchall()
         cursor.close()
+        conexionBD.desconectar(db)
 
         cantidadItems=0
         items=[]
@@ -367,12 +401,14 @@ def calcularPrecio():
     else:
         factorIva = 1.21
 
+    db = conexionBD.conectar(HOST, DB, USER, PASS)
     cursor=db.cursor()
     sql = (" SELECT Id, Materiales, Obreros, Herramental, Cargas_sociales FROM items  " + 
            " ORDER BY Id ")    
     cursor.execute(sql)
     itemsBusqueda = cursor.fetchall()
     cursor.close()
+    conexionBD.desconectar(db)
 
     costo_directo_total = 0
     datos_items=[] 
@@ -476,6 +512,7 @@ def crearRubro():
     activo=request.json['activo']
    
     try:
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
         cursor=db.cursor()
         sql = (" INSERT INTO rubros " + 
                " VALUES (%s,%s,%s) ")
@@ -483,6 +520,7 @@ def crearRubro():
         cursor.execute(sql,tupla)
         db.commit()
         cursor.close()
+        conexionBD.desconectar(db)
         
     except Exception as e:        
         return jsonify({'result':'Error al registrar el rubro: '+str(e)})
@@ -507,6 +545,7 @@ def crearAquienLlamo():
         Facebook=request.json['Facebook']
         Instagram=request.json['Instagram']        
     
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
         cursor=db.cursor()
         sql = (" INSERT INTO a_quien_llamo " + 
                " VALUES (default,%s,%s,%s,%s,%s,%s,%s,'Si') ")
@@ -514,6 +553,7 @@ def crearAquienLlamo():
         cursor.execute(sql,tupla)
         db.commit()
         cursor.close()       
+        conexionBD.desconectar(db)
         
     except Exception as e:        
         return jsonify({'result':'Error', 'mensaje': 'Error al crear A quien Llamo?: '+str(e)})
@@ -525,8 +565,9 @@ def crearAquienLlamo():
 def listarAquienLlamo():
     
     try:
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
         cursor=db.cursor()
-        sql0 = "SHOW COLUMNS FROM a_quien_llamo FROM consultobra;"
+        sql0 = "SHOW COLUMNS FROM a_quien_llamo FROM "+ DB + ";"
         cursor.execute(sql0)
         columnas = cursor.fetchall()        
         columnasItem = []
@@ -542,6 +583,7 @@ def listarAquienLlamo():
         cursor.execute(sql)
         AquienLlamoBusqueda = cursor.fetchall()
         cursor.close()
+        conexionBD.desconectar(db)
 
         if not AquienLlamoBusqueda:
             return jsonify({'result':'Error' , 'mensaje': 'No se encontraron A_quien_llamo'})
@@ -573,8 +615,9 @@ def buscarAquienLlamo():
         Facebook = "%" + request.json['Facebook'] + "%"
         Instagram = "%" + request.json['Instagram'] + "%"
     
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
         cursor=db.cursor()
-        sql0 = "SHOW COLUMNS FROM a_quien_llamo FROM consultobra;"
+        sql0 = "SHOW COLUMNS FROM a_quien_llamo FROM "+ DB + ";"
         cursor.execute(sql0)
         columnas = cursor.fetchall()        
         columnasItem = []
@@ -592,6 +635,7 @@ def buscarAquienLlamo():
         cursor.execute(sql,tupla)
         AquienLlamoBusqueda = cursor.fetchall()
         cursor.close()
+        conexionBD.desconectar(db)
 
         if not AquienLlamoBusqueda:
             return jsonify({'result':'Error' , 'mensaje': 'No se encontraron A_quien_llamo'})
@@ -616,8 +660,9 @@ def buscarDatosAquienLlamo():
     try:
         Id=request.json['Id']
 
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
         cursor=db.cursor()
-        sql0 = "SHOW COLUMNS FROM a_quien_llamo FROM consultobra;"
+        sql0 = "SHOW COLUMNS FROM a_quien_llamo FROM "+ DB + ";"
         cursor.execute(sql0)
         columnas = cursor.fetchall()        
         columnasItem = []
@@ -629,6 +674,7 @@ def buscarDatosAquienLlamo():
         cursor.execute(sql, Id)
         ListaAquienLlamo = cursor.fetchone()
         cursor.close()
+        conexionBD.desconectar(db)
 
         if not ListaAquienLlamo:
             return jsonify({'result':'Error' , 'mensaje': 'No se encontró el A_quien_llamo'})
@@ -656,6 +702,7 @@ def modificarAquienLlamo():
         Facebook=request.json['Facebook']
         Instagram=request.json['Instagram']  
      
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
         cursor=db.cursor()
         sql = (" UPDATE a_quien_llamo " + 
                " SET Categoria=%s, Nombre=%s, Apellido=%s, Telefono=%s, Direccion=%s, Facebook=%s, Instagram=%s "+
@@ -664,6 +711,7 @@ def modificarAquienLlamo():
         cursor.execute(sql,tupla)
         db.commit()
         cursor.close()       
+        conexionBD.desconectar(db)
         
     except Exception as e:        
         return jsonify({'result':'Error' , 'mensaje':'Error al modificar el A_quien_llamo: '+str(e)})
@@ -676,14 +724,16 @@ def eliminarAquienLlamo():
 
     try:
         Id=request.json['Id']
-    
+
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
         cursor=db.cursor()
         sql = (" UPDATE a_quien_llamo SET Activo='No' " + 
                " WHERE Id=%s " )
         tupla=(Id)
         cursor.execute(sql,tupla)
         db.commit()
-        cursor.close()       
+        cursor.close()   
+        conexionBD.desconectar(db)    
         
     except Exception as e:        
         return jsonify({'result':'Error' , 'mensaje':'Error al eliminar el A_quien_llamo: '+str(e)})
@@ -698,6 +748,7 @@ def crearCategoria():
     try:        
         NombreCategoria=request.json['NombreCategoria']              
     
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
         cursor=db.cursor()
         sql = (" INSERT INTO categorias " + 
                " VALUES (default,%s) ")
@@ -705,6 +756,7 @@ def crearCategoria():
         cursor.execute(sql,tupla)
         db.commit()
         cursor.close()       
+        conexionBD.desconectar(db)
         
     except Exception as e:        
         return jsonify({'result':'Error', 'mensaje': 'Error al crear Categoria: '+str(e)})
@@ -716,8 +768,9 @@ def crearCategoria():
 def listarCategorias():
     
     try:
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
         cursor=db.cursor()
-        sql0 = "SHOW COLUMNS FROM categorias FROM consultobra;"
+        sql0 = "SHOW COLUMNS FROM categorias FROM "+ DB + ";"
         cursor.execute(sql0)
         columnas = cursor.fetchall()        
         columnasItem = []
@@ -729,6 +782,39 @@ def listarCategorias():
         cursor.execute(sql)
         CategoriasBusqueda = cursor.fetchall()
         cursor.close()
+        conexionBD.desconectar(db)
+
+        if not CategoriasBusqueda:
+            return jsonify({'result':'Error' , 'mensaje': 'No se encontraron Categorias'})
+
+        Categorias=[]
+        for i in CategoriasBusqueda:
+            elemento = {}
+            for index in range(len(columnasItem)):
+                elemento[columnasItem[index]] = i[index]
+            Categorias.append(elemento)      
+        
+    except Exception as e:        
+        return jsonify({'result':'Error', 'mensaje': 'Error al buscar Categorias: '+str(e)})
+    return jsonify({'result':'Success', 'Categorias':Categorias})
+
+
+@app.route('/listarCategorias2', methods=['GET'])
+def listarCategorias2():
+    
+    try:
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
+        cursor=db.cursor()
+        columnasItem = []
+        
+        columnasItem.append('Id')
+        columnasItem.append('NombreCategoria')
+        
+        sql = (" SELECT * FROM categorias ")
+        cursor.execute(sql)
+        CategoriasBusqueda = cursor.fetchall()
+        cursor.close()
+        conexionBD.desconectar(db)
 
         if not CategoriasBusqueda:
             return jsonify({'result':'Error' , 'mensaje': 'No se encontraron Categorias'})
@@ -746,13 +832,15 @@ def listarCategorias():
 
 
 
+
 @app.route('/modificarCategoria', methods=['POST'])
 def modificarCategoria():
 
     try:
         Id=request.json['Id']
-        NombreCategoria=request.json['NombreCategoria']        
-     
+        NombreCategoria=request.json['NombreCategoria']       
+
+        db = conexionBD.conectar(HOST, DB, USER, PASS)
         cursor=db.cursor()
         sql = (" UPDATE categorias " + 
                " SET NombreCategoria=%s "+
@@ -761,6 +849,7 @@ def modificarCategoria():
         cursor.execute(sql,tupla)
         db.commit()
         cursor.close()       
+        conexionBD.desconectar(db)
         
     except Exception as e:        
         return jsonify({'result':'Error' , 'mensaje':'Error al modificar la Categoria: '+str(e)})
