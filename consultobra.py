@@ -8,7 +8,7 @@ import numpy as np
  
 app = Flask(__name__)
 
-
+'''
 global HOST
 HOST = 'us-cdbr-east-04.cleardb.com'
 global DB
@@ -18,8 +18,8 @@ USER = 'b78ad30286a20d'
 global PASS
 PASS = '2a85203a'
 
-
 '''
+
 global HOST
 HOST = 'localhost'
 global DB
@@ -28,7 +28,7 @@ global USER
 USER = 'root'
 global PASS
 PASS = ''
-'''
+
 
 
 
@@ -55,7 +55,7 @@ def guardarExcel():
 
 def leerExcel(nombreExcel):
     rubrosCargados = []
-    df1 = pd.read_excel(nombreExcel, sheet_name="Tabla")
+    df1 = pd.read_excel(nombreExcel, sheet_name="Hoja1")
     df = df1.replace(np.nan, '', regex=True)
 
     for index, row in df.iterrows():
@@ -73,11 +73,7 @@ def leerExcel(nombreExcel):
         Herramental = row[7]
         Cargas_sociales = row[8]
         Comentario = row[9]
-        Oficial_especializado = row[10]
-        Oficial = row[11]
-        Medio_oficial = row[12]
-        Ayudante = row[13]
-        ItemActivo = row[14]
+        ItemActivo = row[10]
 
         if Materiales == "":
             Materiales=0
@@ -86,19 +82,7 @@ def leerExcel(nombreExcel):
         if Herramental == "":
             Herramental=0
         if Cargas_sociales == "":
-            Cargas_sociales=0        
-
-        if Oficial_especializado == "":
-            Oficial_especializado=0
-
-        if Oficial == "":
-            Oficial=0 
-
-        if Medio_oficial == "":
-            Medio_oficial=0
-
-        if Ayudante == "":
-            Ayudante=0 
+            Cargas_sociales=0       
        
         flag = True
         if not rubrosCargados:
@@ -110,7 +94,7 @@ def leerExcel(nombreExcel):
             rubrosCargados.append(idRubro)
             cargarRubroDesdeExcel(idRubro, NombreRubro, 'SI')
 
-        cargarItemDesdeExcel(IdItem,NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,idRubro, ItemActivo)
+        cargarItemDesdeExcel(IdItem,NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,idRubro, ItemActivo)
     
     print("Carga de datos finalizada")
 
@@ -147,7 +131,7 @@ def cargarRubroDesdeExcel(id, nombre, activo):
     return 'Rubro registrado correctamente'
 
 
-def cargarItemDesdeExcel(IdItem,NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,RubroId,ItemActivo):
+def cargarItemDesdeExcel(IdItem,NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,RubroId,ItemActivo):
 
     try:
         print(IdItem)
@@ -159,19 +143,16 @@ def cargarItemDesdeExcel(IdItem,NombreItem,Unidad,Materiales,Obreros,Herramental
         cursor.execute(sql,tupla)
         item=cursor.fetchone()
 
-        print("aqui1")
-
-        if not item:
-            print("aqui2")
-            sql1 = ("INSERT INTO items (Id,Nombre,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,RubroId,Activo) " + 
-                    "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ")
-            tupla1=(IdItem, NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,RubroId,ItemActivo)
+        if not item:            
+            sql1 = ("INSERT INTO items (Id,Nombre,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,RubroId,Activo) " + 
+                    "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ")
+            tupla1=(IdItem,NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,RubroId,ItemActivo)
             cursor.execute(sql1,tupla1)
             
         else:
-            sql1 = (" UPDATE items SET Nombre=%s, Unidad=%s, Materiales=%s, Obreros=%s, Herramental=%s, Cargas_sociales=%s, Comentario=%s, Oficial_especializado=%s, Oficial=%s, Medio_oficial=%s, Ayudante=%s, RubroId=%s , Activo=%s " + 
+            sql1 = (" UPDATE items SET Nombre=%s, Unidad=%s, Materiales=%s, Obreros=%s, Herramental=%s, Cargas_sociales=%s, Comentario=%s, RubroId=%s, Activo=%s " + 
                     " WHERE Id = %s ")
-            tupla1=(NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,Oficial_especializado,Oficial,Medio_oficial,Ayudante,RubroId,ItemActivo,  IdItem)
+            tupla1=(NombreItem,Unidad,Materiales,Obreros,Herramental,Cargas_sociales,Comentario,RubroId,ItemActivo,IdItem)
             cursor.execute(sql1,tupla1)
             print("aqui3")
 
@@ -797,40 +778,6 @@ def listarCategorias():
     except Exception as e:        
         return jsonify({'result':'Error', 'mensaje': 'Error al buscar Categorias: '+str(e)})
     return jsonify({'result':'Success', 'Categorias':Categorias})
-
-
-@app.route('/listarCategorias2', methods=['GET'])
-def listarCategorias2():
-    
-    try:
-        db = conexionBD.conectar(HOST, DB, USER, PASS)
-        cursor=db.cursor()
-        columnasItem = []
-        
-        columnasItem.append('Id')
-        columnasItem.append('NombreCategoria')
-        
-        sql = (" SELECT * FROM categorias ")
-        cursor.execute(sql)
-        CategoriasBusqueda = cursor.fetchall()
-        cursor.close()
-        conexionBD.desconectar(db)
-
-        if not CategoriasBusqueda:
-            return jsonify({'result':'Error' , 'mensaje': 'No se encontraron Categorias'})
-
-        Categorias=[]
-        for i in CategoriasBusqueda:
-            elemento = {}
-            for index in range(len(columnasItem)):
-                elemento[columnasItem[index]] = i[index]
-            Categorias.append(elemento)      
-        
-    except Exception as e:        
-        return jsonify({'result':'Error', 'mensaje': 'Error al buscar Categorias: '+str(e)})
-    return jsonify({'result':'Success', 'Categorias':Categorias})
-
-
 
 
 @app.route('/modificarCategoria', methods=['POST'])
