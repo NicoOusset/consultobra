@@ -8,7 +8,7 @@ import numpy as np
  
 app = Flask(__name__)
 
-'''
+
 global HOST
 HOST = 'us-cdbr-east-04.cleardb.com'
 global DB
@@ -29,7 +29,7 @@ USER = 'root'
 global PASS
 PASS = ''
 
-
+'''
 
 
 
